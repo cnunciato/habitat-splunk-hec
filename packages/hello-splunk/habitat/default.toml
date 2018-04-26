@@ -1,0 +1,9 @@
+host = "0.0.0.0"
+port = 8888
+
+[splunk]
+host = ""
+port = "8088"
+path = "/services/collector"
+token = ""
+sourcetype = "habitat-health-check"

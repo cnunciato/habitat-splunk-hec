@@ -1,0 +1,6 @@
+hostname = "0.0.0.0"
+port = 3000
+
+# These just let me manipulate my service's HTTP responses to /health requests.
+status = 200
+message = "OK"

@@ -1,0 +1,6 @@
+{
+  "host": "{{ cfg.host }}",
+  "port": {{ cfg.port }},
+  "status": "{{ cfg.status }}",
+  "message": "{{ cfg.message }}"
+}

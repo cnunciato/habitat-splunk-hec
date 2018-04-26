@@ -1,0 +1,3 @@
+#!/bin/sh
+
+exec nginx -c "{{ pkg.svc_config_path }}/nginx.conf" 2>&1

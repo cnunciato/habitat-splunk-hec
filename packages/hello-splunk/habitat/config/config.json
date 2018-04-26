@@ -1,0 +1,11 @@
+{
+  "host": "{{ cfg.host }}",
+  "port": {{ cfg.port }},
+  "splunk": {
+    "host": "{{ cfg.splunk.host }}",
+    "port": "{{ cfg.splunk.port }}",
+    "path": "{{ cfg.splunk.path }}",
+    "token": "{{ cfg.splunk.token }}",
+    "sourcetype": "{{ cfg.splunk.sourcetype }}"
+  }
+}
