@@ -1,3 +1,5 @@
+# Habitat + Splunk
+
 This repo demonstrates one way to forward Habitat health-check events to a Splunk HTTP Event Collector interface. It consists of three packages:
 
 * **hello-node**, a simple JSON web service
@@ -27,7 +29,7 @@ Once you've applied your Splunk settings done, just:
 sudo hab sup run
 ```
 
-... to run the Supervisor in the foreground, so you can keep an eye on what's happening easily.
+... to run the Supervisor in the foreground, so you can keep an eye on what's happening easily. The packages referenced in this repo are all currently available on the public Habitat Depot, so you should be able to use them without having to build anything locally first.
 
 I've also included a little hack to allow you to change the HTTP response of `hello-node`'s `/health` endpoint, just so you can see some variations in the Splunk data. To do that:
 
@@ -36,3 +38,5 @@ echo "status = 500
 message = 'Internal Server Error, or Something
 " | hab config apply hello-node.default $(date +%s)
 ```
+
+If the services are all running and the logs look clean (i.e., no complaints about missing hosts or tokens), you should start seeing events spill into your Splunk search within a few seconds. By default, the `sourcetype` is set to `habitat-health-check`.
