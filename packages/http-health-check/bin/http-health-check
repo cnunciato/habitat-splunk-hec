@@ -1,0 +1,106 @@
+#!/bin/env node
+
+const http = require('http');
+
+let sourceOpts = process.argv[2];
+let destOpts = process.argv[3];
+let service = process.argv[4];
+
+if (sourceOpts) {
+  try {
+    sourceOpts = JSON.parse(sourceOpts);
+  }
+  catch(e) {
+    console.error(`Failed to parse source options as JSON: ${e.message}`, sourceOpts);
+    sourceOpts = null;
+  }
+}
+
+if (destOpts) {
+  try {
+    destOpts = JSON.parse(destOpts);
+  }
+  catch(e) {
+    console.error(`Failed to parse destination options as JSON: ${e.message}`, destOpts);
+    destOpts = null;
+  }
+}
+
+if (service) {
+  try {
+    service = JSON.parse(service);
+  }
+  catch(e) {
+    console.error(`Failed to parse service object as JSON: ${e.message}`, service);
+    service = null;
+  }
+}
+
+if (sourceOpts) {
+  let healthCheckStatus;
+  let healthCheckMessage;
+
+  http.request(sourceOpts, res => {
+    res.setEncoding('utf8');
+
+    let health = '';
+
+    res.on('data', data => {
+      health += data;
+    });
+
+    res.on('end', () => {
+      try {
+        const body = JSON.parse(health);
+
+        healthCheckStatus = body.status || res.status;
+        healthCheckMessage = body.message;
+
+        if (service) {
+          body.service = service;
+        }
+
+        if (destOpts) {
+          const req = http.request(destOpts);
+
+          req.on('error', e => {
+            handleExit(1, e.message);
+          });
+
+          req.write(JSON.stringify(body));
+          req.end();
+        }
+      } catch (e) {
+        console.error('3');
+        handleExit(1, e.message);
+      }
+    });
+
+    process.on('beforeExit', code => {
+      handleExit(code);
+    });
+  })
+  .on('error', e => {
+    handleExit(1, e.message);
+  })
+  .end();
+
+  function handleExit(code, message) {
+    let exitCode = code;
+
+    if (healthCheckStatus) {
+      if (healthCheckStatus >= 500) {
+        exitCode = 2;
+      }
+      else if (healthCheckStatus >= 300) {
+        exitCode = 1;
+      }
+    }
+
+    if (exitCode !== 0) {
+      console.error(`Exiting with nonzero status ${exitCode}: ${message || healthCheckMessage || '(No message provided)'}`);
+    }
+
+    process.exit(code);
+  }
+}

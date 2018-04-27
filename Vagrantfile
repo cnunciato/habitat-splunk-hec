@@ -4,9 +4,9 @@ groupadd hab
 useradd -g hab hab
 curl https://raw.githubusercontent.com/habitat-sh/habitat/master/components/hab/install.sh | bash
 
-hab sup load cnunciato/hello-splunk --strategy at-once
-hab sup load cnunciato/hello-node --bind splunk:hello-splunk.default --strategy at-once
-hab sup load cnunciato/hello-nginx --bind app:hello-node.default --strategy at-once
+hab sup load cnunciato/hello-splunk --strategy at-once --channel unstable
+hab sup load cnunciato/hello-node --bind splunk:hello-splunk.default --strategy at-once --channel unstable
+hab sup load cnunciato/hello-nginx --bind app:hello-node.default --bind splunk:hello-splunk.default --strategy at-once --channel unstable
 
 mkdir -p /hab/user/hello-splunk/config/
 echo "[splunk]

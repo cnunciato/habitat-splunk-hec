@@ -1,74 +1,37 @@
-#!{{ pkgPathFor "core/node" }}/bin/node
+#!/bin/sh
 
-const http = require('http');
-let healthCheckStatus;
-let healthCheckMessage;
+# Source is this service's health-check endpoint. It's assumed the endpoint will
+# return a JSON body containing at least an HTTP status and associated message;
+# for example: { "status": 200, "message": "OK" }
+source_opts='{
+  "port": {{ cfg.port }},
+  "path": "/health"
+}'
 
-http.get('http://localhost:{{ cfg.port }}/health', res => {
-  res.setEncoding('utf8');
+# Destination is the (optional) HTTP endpoint to which to forward the health-check response.
+# You can forward to any HTTP endpoint reachable by the node on which this service is running.
+# If you include no destination options, health_check will simply exit with an exit code
+# corresponding to your service's HTTP status code.
+destination_opts=""
 
-  let health = '';
-
-  res.on('data', data => {
-    health += data;
-  });
-
-  res.on('end', () => {
-    try {
-      const body = JSON.parse(health);
-
-      healthCheckStatus = body.status || res.status;
-      healthCheckMessage = body.message;
-      body.service = {{ toJson svc.me }};
-
-      {{~#if bind.splunk.first.alive}}
-      const opts = {
-        hostname: '{{ bind.splunk.first.sys.ip }}',
-        port: {{ bind.splunk.first.cfg.port }},
-        path: '/',
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      };
-
-      const req = http.request(opts);
-
-      req.on('error', e => {
-        handleExit(1, e.message);
-      });
-
-      req.write(JSON.stringify(body));
-      req.end();
-      {{~/if}}
-    } catch (e) {
-      handleExit(1, e.message);
-    }
-  });
-
-  process.on('beforeExit', code => {
-    handleExit(code);
-  });
-})
-.on('error', e => {
-  handleExit(1, e.message);
-});
-
-function handleExit(code, message) {
-  let exitCode = code;
-
-  if (healthCheckStatus) {
-    if (healthCheckStatus >= 500) {
-      exitCode = 2;
-    }
-    else if (healthCheckStatus >= 300) {
-      exitCode = 1;
-    }
+# Here, we're using the hello-splunk service, which is Splunk HEC-aware, as our destination
+# endpoint. That service will craft an appropriately shaped message based on our service's
+# health-check response and submit it to Splunk. Other services running on this node can use
+# the same service as well.
+{{~#if bind.splunk.first.alive}}
+destination_opts='{
+  "hostname": "{{ bind.splunk.first.sys.ip }}",
+  "port": {{ bind.splunk.first.cfg.port }},
+  "path": "/",
+  "method": "POST",
+  "headers": {
+    "Content-Type": "application/json"
   }
+}'
+#{{~/if}}
 
-  if (exitCode !== 0) {
-    console.error(`Exiting with nonzero status ${exitCode}: ${message || healthCheckMessage || '(No message provided)'}`);
-  }
+# This is optional, but it might be a good idea to forward a snapshot of this service
+# definition as well. http-health-check will honor this object if it's passed in.
+service='{{ toJson svc.me }}'
 
-  process.exit(code);
-}
+exec "{{ pkgPathFor "cnunciato/http-health-check" }}/bin/http-health-check" "$source_opts" "$destination_opts" "$service" 2>&1
