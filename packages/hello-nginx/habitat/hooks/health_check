@@ -1,0 +1,24 @@
+#!/bin/sh
+
+source_opts='{
+  "port": {{ cfg.http.server.listen }},
+  "path": "/health"
+}'
+
+destination_opts=""
+
+{{~#if bind.splunk.first.alive}}
+destination_opts='{
+  "hostname": "{{ bind.splunk.first.sys.ip }}",
+  "port": {{ bind.splunk.first.cfg.port }},
+  "path": "/",
+  "method": "POST",
+  "headers": {
+    "Content-Type": "application/json"
+  }
+}'
+#{{~/if}}
+
+service='{{ toJson svc.me }}'
+
+exec "{{ pkgPathFor "cnunciato/http-health-check" }}/bin/http-health-check" "$source_opts" "$destination_opts" "$service" 2>&1

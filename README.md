@@ -1,12 +1,23 @@
 # Habitat + Splunk
 
-This repo demonstrates one way to forward Habitat health-check events to a Splunk HTTP Event Collector interface. It consists of three packages:
+This repo demonstrates one way to forward Habitat health-check events to a Splunk HTTP Event Collector interface. It consists of four packages:
 
 * **hello-node**, a simple JSON web service
-* **hello-nginx**, a web server that sits in front of it, and
-* **hello-splunk**, a service designed to listen locally for JSON posts of health-check data and forward them to your instance of Splunk.
+* **hello-nginx**, a web server that sits in front of it,
+* **hello-splunk**, a service designed to listen locally for JSON posts of health-check data and forward them to your instance of Splunk, and
+* **http-health-check**, a binary package whose job is to call health-check endpoints and optionally forward their responses.
 
-The Nginx service doesn't do anything yet; as of now, all that's really happening here is that the Node app's `health_check` hook calls into its service's `/health` endpoint, captures its status as a JSON payload, and calls into the locally running `hello-splunk` service, which is configured to forward its messages to Splunk.
+Here's how this works. The `hello-splunk` service is designed to be Splunk HEC-aware; it just accepts JSON payloads and forwards them to your configured instance of Splunk. The `http-health-check` package exposes a binary that accepts three arguments, all as JSON:
+
+* the location of an HTTP health-check endpoint (e.g., `{ "port": 3000, "path": "/health" }`)
+* the location of the HTTP destination (i.e., where you want to send the health-check endpoint's response), and
+* an optional [`svc_member` object](https://www.habitat.sh/docs/reference/#svc_member) describing the service that was checked
+
+If an HTTP service wants to support a health check, it can use `http-health-check` to call itself and send the results to any reachable HTTP destination. In this example, my `hello-node` and `hello-nginx` services both have `health_check` hooks that use `http-health-check` to forward their health to a locally running `hello-splunk` service, and `hello-splunk` sends both of their health data to Splunk.
+
+![image](https://user-images.githubusercontent.com/274700/39382253-c2078482-4a19-11e8-8eb2-636dda70717a.png)
+
+![image](https://user-images.githubusercontent.com/274700/39382502-8d613a60-4a1a-11e8-979c-69c5d366ff3f.png)
 
 ## Prerequisites
 
@@ -21,7 +32,7 @@ vagrant up
 
 ## Usage
 
-With the VM provisioned, `ssh` in and apply your hostname, token and whatever other values need to be different [from the defaults](./packages/hello-splunk/habitat/default.toml). For convenience, there's a `user.toml` file at `/hab/user/hello-splunk/config/user.toml` that you can use to specify the configuration settings for your Splunk instance (minimally, you'll need to provide at least a `host` and `token`).
+With the VM provisioned, `ssh` in and apply your Splunk hostname, token and whatever other values need to be different [from the defaults](./packages/hello-splunk/habitat/default.toml). For convenience, there's a `user.toml` file at `/hab/user/hello-splunk/config/user.toml` that you can use to specify the configuration settings for your Splunk instance (minimally, you'll need to provide at least a `host` and `token`).
 
 Once you've applied your Splunk settings done, just:
 
