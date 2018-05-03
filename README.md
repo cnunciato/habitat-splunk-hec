@@ -1,6 +1,6 @@
 # Habitat + Splunk
 
-This repo demonstrates one way to forward Habitat health-check events to a Splunk HTTP Event Collector interface. It consists of four packages:
+This repo demonstrates one way to forward Habitat health-check events to a Splunk [HTTP Event Collector](https://docs.splunk.com/Documentation/Splunk/7.0.3/Data/AboutHEC) interface. It consists of four packages:
 
 * **hello-node**, a simple JSON web service
 * **hello-nginx**, a web server that sits in front of it,
